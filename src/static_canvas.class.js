@@ -906,6 +906,7 @@
             'height="', (options.viewBox ? options.viewBox.height : this.height), '" ',
             (this.backgroundColor && !this.backgroundColor.source ? 'style="background-color: ' + this.backgroundColor +'" ' : null),
             (options.viewBox ? 'viewBox="' + options.viewBox.x + ' ' + options.viewBox.y + ' ' + options.viewBox.width + ' ' + options.viewBox.height + '" ' : null),
+            (options.preserveAspectRatio ? 'preserveAspectRatio="' + options.preserveAspectRatio + '" ' : null),
             'xml:space="preserve">',
           '<desc>Created with Fabric.js ', fabric.version, '</desc>',
           '<defs>', fabric.createSVGFontFacesMarkup(this.getObjects()), fabric.createSVGRefElementsMarkup(this), '</defs>'
