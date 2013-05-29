@@ -164,6 +164,7 @@
     /**
      * Type of an object
      * @type String
+     * @default
      */
     type: 'path',
 
@@ -171,6 +172,7 @@
      * Constructor
      * @param {Array|String} path Path data (sequence of coordinates and corresponding "command" tokens)
      * @param {Object} [options] Options object
+     * @return {fabric.Path} thisArg
      */
     initialize: function(path, options) {
       options = options || { };
@@ -202,6 +204,7 @@
 
     /**
      * @private
+     * @param {Object} [options] Options object
      */
     _initializePath: function (options) {
       var isWidthSet = 'width' in options,
@@ -231,6 +234,7 @@
 
     /**
      * @private
+     * @param {Boolean} positionSet When false, path offset is returned otherwise 0
      */
     _calculatePathOffset: function (positionSet) {
       return {
@@ -241,6 +245,7 @@
 
     /**
      * @private
+     * @param {CanvasRenderingContext2D} ctx context to render path on
      */
     _render: function(ctx) {
       var current, // current instruction
@@ -549,26 +554,23 @@
       }
 
       if (this.stroke) {
+        ctx.lineWidth = this.strokeWidth;
+        ctx.lineCap = this.strokeLineCap;
+        ctx.lineJoin = this.strokeLineJoin;
+        ctx.miterLimit = this.strokeMiterLimit;
         ctx.strokeStyle = this.stroke.toLive
           ? this.stroke.toLive(ctx)
           : this.stroke;
       }
+
       this._setShadow(ctx);
       this.clipTo && fabric.util.clipContext(this, ctx);
-
       ctx.beginPath();
 
       this._render(ctx);
       this._renderFill(ctx);
-
-      if (this.stroke) {
-        ctx.strokeStyle = this.stroke;
-        ctx.lineWidth = this.strokeWidth;
-        ctx.lineCap = ctx.lineJoin = 'round';
-        this._renderStroke(ctx);
-      }
+      this._renderStroke(ctx);
       this.clipTo && ctx.restore();
-
       this._removeShadow(ctx);
 
       if (!noTransform && this.active) {
@@ -589,7 +591,7 @@
 
     /**
      * Returns object representation of an instance
-     * @param {Array} propertiesToInclude
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
      * @return {Object} object representation of an instance
      */
     toObject: function(propertiesToInclude) {
@@ -607,7 +609,7 @@
 
     /**
      * Returns dataless object representation of an instance
-     * @param {Array} propertiesToInclude
+     * @param {Array} [propertiesToInclude] Any properties that you might want to additionally include in the output
      * @return {Object} object representation of an instance
      */
     toDatalessObject: function(propertiesToInclude) {
@@ -619,6 +621,7 @@
       return o;
     },
 
+    /* _TO_SVG_START_ */
     /**
      * Returns svg representation of an instance
      * @return {String} svg representation of an instance
@@ -652,10 +655,11 @@
 
       return markup.join('');
     },
+    /* _TO_SVG_END_ */
 
     /**
      * Returns number representation of an instance complexity
-     * @return {Number} complexity
+     * @return {Number} complexity of this instance
      */
     complexity: function() {
       return this.path.length;
@@ -794,7 +798,7 @@
    * @static
    * @see http://www.w3.org/TR/SVG/paths.html#PathElement
    */
-  fabric.Path.ATTRIBUTE_NAMES = 'd fill fill-opacity opacity fill-rule stroke stroke-width transform'.split(' ');
+  fabric.Path.ATTRIBUTE_NAMES = fabric.SHARED_ATTRIBUTES.concat(['d']);
 
   /**
    * Creates an instance of fabric.Path from an SVG <path> element

@@ -21,6 +21,7 @@
     /**
      * Type of an object
      * @type String
+     * @default
      */
     type: 'circle',
 
@@ -50,6 +51,7 @@
       });
     },
 
+    /* _TO_SVG_START_ */
     /**
      * Returns svg representation of an instance
      * @return {String} svg representation of an instance
@@ -75,6 +77,7 @@
 
       return markup.join('');
     },
+    /* _TO_SVG_END_ */
 
     /**
      * @private
@@ -130,7 +133,7 @@
    * @static
    * @see: http://www.w3.org/TR/SVG/shapes.html#CircleElement
    */
-  fabric.Circle.ATTRIBUTE_NAMES = 'cx cy r fill fill-opacity opacity stroke stroke-width transform'.split(' ');
+  fabric.Circle.ATTRIBUTE_NAMES = fabric.SHARED_ATTRIBUTES.concat('cx cy r'.split(' '));
 
   /**
    * Returns {@link fabric.Circle} instance from an SVG element

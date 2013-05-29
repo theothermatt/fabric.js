@@ -29,12 +29,16 @@ else if (minifier === 'uglifyjs') {
 
 var includeAllModules = modulesToInclude.length === 1 && modulesToInclude[0] === 'ALL';
 var noStrict = 'no-strict' in buildArgsAsObject;
+var noSVGExport = 'no-svg-export' in buildArgsAsObject;
+var noES5Compat = 'no-es5-compat' in buildArgsAsObject;
 
 var distFileContents =
   '/* build: `node build.js modules=' +
     modulesToInclude.join(',') +
     (modulesToExclude.length ? (' exclude=' + modulesToExclude.join(',')) : '') +
     (noStrict ? ' no-strict' : '') +
+    (noSVGExport ? ' no-svg-export' : '') +
+    (noES5Compat ? ' no-es5-compat' : '') +
   '` */\n';
 
 function appendFileContents(fileNames, callback) {
@@ -53,10 +57,17 @@ function appendFileContents(fileNames, callback) {
 
     fs.readFile(__dirname + '/' + fileName, function (err, data) {
       if (err) throw err;
+      var strData = String(data);
       if (noStrict) {
-        data = String(data).replace(/"use strict";?\n?/, '');
+        strData = strData.replace(/"use strict";?\n?/, '');
       }
-      distFileContents += (data + '\n');
+      if (noSVGExport) {
+        strData = strData.replace(/\/\* _TO_SVG_START_ \*\/[\s\S]*\/\* _TO_SVG_END_ \*\//, '');
+      }
+      if (noES5Compat) {
+        strData = strData.replace(/\/\* _ES5_COMPAT_START_ \*\/[\s\S]*\/\* _ES5_COMPAT_END_ \*\//, '');
+      }
+      distFileContents += (strData + '\n');
       readNextFile();
     });
 
@@ -91,8 +102,8 @@ var filesToInclude = [
   ifSpecifiedInclude('gestures', 'lib/event.js'),
 
   'src/log.js',
-  'src/observable.mixin.js',
-  'src/collection.mixin.js',
+  'src/mixins/observable.mixin.js',
+  'src/mixins/collection.mixin.js',
 
   'src/util/misc.js',
   'src/util/lang_array.js',
@@ -118,27 +129,28 @@ var filesToInclude = [
 
   'src/static_canvas.class.js',
 
-  ifSpecifiedInclude('freedrawing', 'src/base_brush.class.js'),
+  ifSpecifiedInclude('freedrawing', 'src/brushes/base_brush.class.js'),
 
-  ifSpecifiedInclude('freedrawing', 'src/pencil_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/circle_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/spray_brush.class.js'),
-  ifSpecifiedInclude('freedrawing', 'src/pattern_brush.class.js'),
+  ifSpecifiedInclude('freedrawing', 'src/brushes/pencil_brush.class.js'),
+  ifSpecifiedInclude('freedrawing', 'src/brushes/circle_brush.class.js'),
+  ifSpecifiedInclude('freedrawing', 'src/brushes/spray_brush.class.js'),
+  ifSpecifiedInclude('freedrawing', 'src/brushes/pattern_brush.class.js'),
 
   ifSpecifiedInclude('interaction', 'src/canvas.class.js'),
-  ifSpecifiedInclude('interaction', 'src/canvas_events.mixin.js'),
+  ifSpecifiedInclude('interaction', 'src/mixins/canvas_events.mixin.js'),
 
-  'src/canvas_animation.mixin.js',
+  'src/mixins/canvas_animation.mixin.js',
 
-  ifSpecifiedInclude('serialization', 'src/canvas_serialization.mixin.js'),
-  ifSpecifiedInclude('gestures', 'src/canvas_gestures.mixin.js'),
+  ifSpecifiedInclude('serialization', 'src/mixins/canvas_serialization.mixin.js'),
+  ifSpecifiedInclude('gestures', 'src/mixins/canvas_gestures.mixin.js'),
 
   'src/object.class.js',
-  'src/object_origin.mixin.js',
-  'src/object_geometry.mixin.js',
-  'src/stateful.mixin.js',
+  'src/mixins/object_origin.mixin.js',
+  'src/mixins/object_geometry.mixin.js',
 
-  ifSpecifiedInclude('interaction', 'src/object_interactivity.mixin.js'),
+  ifSpecifiedInclude('stateful', 'src/mixins/stateful.mixin.js'),
+
+  ifSpecifiedInclude('interaction', 'src/mixins/object_interactivity.mixin.js'),
 
   'src/line.class.js',
   'src/circle.class.js',
@@ -152,9 +164,19 @@ var filesToInclude = [
   'src/group.class.js',
   'src/image.class.js',
 
-  ifSpecifiedInclude('object_straightening', 'src/object_straightening.mixin.js'),
+  ifSpecifiedInclude('object_straightening', 'src/mixins/object_straightening.mixin.js'),
 
-  ifSpecifiedInclude('image_filters', 'src/image_filters.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/brightness_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/convolute_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/gradienttransparency_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/grayscale_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/invert_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/noise_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/pixelate_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/removewhite_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/sepia_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/sepia2_filter.class.js'),
+  ifSpecifiedInclude('image_filters', 'src/filters/tint_filter.class.js'),
 
   ifSpecifiedInclude('text', 'src/text.class.js'),
 

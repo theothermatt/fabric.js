@@ -11,23 +11,41 @@
       extend = fabric.util.object.extend,
       capitalize = fabric.util.string.capitalize,
       clone = fabric.util.object.clone,
+      toFixed = fabric.util.toFixed,
       multiplyTransformMatrices = fabric.util.multiplyTransformMatrices;
 
+  fabric.SHARED_ATTRIBUTES = [
+    "transform",
+    "fill", "fill-opacity", "fill-rule",
+    "opacity",
+    "stroke", "stroke-dasharray", "stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke-width"
+  ];
+
   var attributesMap = {
+    'fill-opacity':     'fillOpacity',
+    'fill-rule':        'fillRule',
+    'font-family':      'fontFamily',
+    'font-size':        'fontSize',
+    'font-style':       'fontStyle',
+    'font-weight':      'fontWeight',
     'cx':               'left',
     'x':                'left',
+    'r':                'radius',
+    'stroke-dasharray': 'strokeDashArray',
+    'stroke-linecap':   'strokeLineCap',
+    'stroke-linejoin':  'strokeLineJoin',
+    'stroke-miterlimit':'strokeMiterLimit',
+    'stroke-opacity':   'strokeOpacity',
+    'stroke-width':     'strokeWidth',
+    'text-decoration':  'textDecoration',
     'cy':               'top',
     'y':                'top',
-    'r':                'radius',
-    'fill-opacity':     'opacity',
-    'fill-rule':        'fillRule',
-    'stroke-width':     'strokeWidth',
-    'transform':        'transformMatrix',
-    'text-decoration':  'textDecoration',
-    'font-size':        'fontSize',
-    'font-weight':      'fontWeight',
-    'font-style':       'fontStyle',
-    'font-family':      'fontFamily'
+    'transform':        'transformMatrix'
+  };
+
+  var colorAttributes = {
+    'stroke': 'strokeOpacity',
+    'fill':   'fillOpacity'
   };
 
   function normalizeAttr(attr) {
@@ -39,20 +57,47 @@
   }
 
   function normalizeValue(attr, value, parentAttributes) {
+    var isArray;
+
     if ((attr === 'fill' || attr === 'stroke') && value === 'none') {
-      return '';
+      value = '';
     }
-    if (attr === 'fill-rule') {
-      return (value === 'evenodd') ? 'destination-over' : value;
+    else if (attr === 'fillRule') {
+      value = (value === 'evenodd') ? 'destination-over' : value;
     }
-    if (attr === 'transform') {
+    else if (attr === 'strokeDashArray') {
+      value = value.replace(/,/g, ' ').split(/\s+/);
+    }
+    else if (attr === 'transformMatrix') {
       if (parentAttributes && parentAttributes.transformMatrix) {
-        return multiplyTransformMatrices(
+        value = multiplyTransformMatrices(
           parentAttributes.transformMatrix, fabric.parseTransformAttribute(value));
       }
-      return fabric.parseTransformAttribute(value);
+      value = fabric.parseTransformAttribute(value);
     }
-    return value;
+
+    isArray = Object.prototype.toString.call(value) === '[object Array]';
+
+    // TODO: need to normalize em, %, pt, etc. to px (!)
+    var parsed = isArray ? value.map(parseFloat) : parseFloat(value);
+
+    return (!isArray && isNaN(parsed) ? value : parsed);
+  }
+
+  /**
+   * @private
+   * @param {Object} attributes Array of attributes to parse
+   */
+  function _setStrokeFillOpacity(attributes) {
+    for (var attr in colorAttributes) {
+      if (!attributes[attr] || typeof attributes[colorAttributes[attr]] === 'undefined') continue;
+
+      var color = new fabric.Color(attributes[attr]);
+      attributes[attr] = color.setAlpha(toFixed(color.getAlpha() * attributes[colorAttributes[attr]], 2)).toRgba();
+
+      delete attributes[colorAttributes[attr]];
+    }
+    return attributes;
   }
 
   /**
@@ -71,7 +116,6 @@
     }
 
     var value,
-        parsed,
         parentAttributes = { };
 
     // if there's a parent container (`g` node), parse its attributes recursively upwards
@@ -81,12 +125,11 @@
 
     var ownAttributes = attributes.reduce(function(memo, attr) {
       value = element.getAttribute(attr);
-      parsed = parseFloat(value);
       if (value) {
-        value = normalizeValue(attr, value, parentAttributes);
         attr = normalizeAttr(attr);
+        value = normalizeValue(attr, value, parentAttributes);
 
-        memo[attr] = isNaN(parsed) ? value : parsed;
+        memo[attr] = value;
       }
       return memo;
     }, { });
@@ -96,7 +139,7 @@
 
     ownAttributes = extend(ownAttributes,
       extend(getGlobalStylesForElement(element), fabric.parseStyleAttribute(element)));
-    return extend(parentAttributes, ownAttributes);
+    return _setStrokeFillOpacity(extend(parentAttributes, ownAttributes));
   }
 
   /**
@@ -287,6 +330,34 @@
     return parsedPoints;
   }
 
+  function parseFontDeclaration(value, oStyle) {
+
+    // TODO: support non-px font size
+    var match = value.match(/(normal|italic)?\s*(normal|small-caps)?\s*(normal|bold|bolder|lighter|100|200|300|400|500|600|700|800|900)?\s*(\d+)px\s+(.*)/);
+
+    if (!match) return;
+
+    var fontStyle = match[1];
+    // Font variant is not used
+    // var fontVariant = match[2];
+    var fontWeight = match[3];
+    var fontSize = match[4];
+    var fontFamily = match[5];
+
+    if (fontStyle) {
+      oStyle.fontStyle = fontStyle;
+    }
+    if (fontWeight) {
+      oStyle.fontSize = isNaN(parseFloat(fontWeight)) ? fontWeight : parseFloat(fontWeight);
+    }
+    if (fontSize) {
+      oStyle.fontSize = parseFloat(fontSize);
+    }
+    if (fontFamily) {
+      oStyle.fontFamily = fontFamily;
+    }
+  }
+
   /**
    * Parses "style" attribute, retuning an object with values
    * @static
@@ -296,32 +367,39 @@
    */
   function parseStyleAttribute(element) {
     var oStyle = { },
-        style = element.getAttribute('style');
+        style = element.getAttribute('style'),
+        attr, value;
 
     if (!style) return oStyle;
 
     if (typeof style === 'string') {
-      style = style.replace(/;$/, '').split(';').forEach(function (current) {
+      style.replace(/;$/, '').split(';').forEach(function (chunk) {
+        var pair = chunk.split(':');
 
-        var pair = current.split(':');
-        var attr = normalizeAttr(pair[0].trim().toLowerCase());
-        var value = normalizeValue(attr, pair[1].trim());
+        attr = normalizeAttr(pair[0].trim().toLowerCase());
+        value = normalizeValue(attr, pair[1].trim());
 
-        // TODO: need to normalize em, %, pt, etc. to px (!)
-        var parsed = parseFloat(value);
-
-        oStyle[attr] = isNaN(parsed) ? value : parsed;
+        if (attr === 'font') {
+          parseFontDeclaration(value, oStyle);
+        }
+        else {
+          oStyle[attr] = value;
+        }
       });
     }
     else {
       for (var prop in style) {
         if (typeof style[prop] === 'undefined') continue;
 
-        var attr = normalizeAttr(prop.toLowerCase());
-        var value = normalizeValue(attr, style[prop]);
-        var parsed = parseFloat(value);
+        attr = normalizeAttr(prop.toLowerCase());
+        value = normalizeValue(attr, style[prop]);
 
-        oStyle[attr] = isNaN(parsed) ? value : parsed;
+        if (attr === 'font') {
+          parseFontDeclaration(value, oStyle);
+        }
+        else {
+          oStyle[attr] = value;
+        }
       }
     }
 
