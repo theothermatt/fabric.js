@@ -30,8 +30,11 @@
     'perPixelTargetFind': false,
     'shadow':             null,
     'visible':            true,
+    'clipTo':             null,
     'rx':                 0,
-    'ry':                 0
+    'ry':                 0,
+    'x':                  0,
+    'y':                  0
   };
 
   QUnit.module('fabric.Rect');
@@ -115,7 +118,9 @@
       strokeLineJoin:   'bevil',
       strokeMiterLimit: 5,
       rx:               11,
-      ry:               12
+      ry:               12,
+      x:                10,
+      y:                20
     });
     deepEqual(rectWithAttrs.toObject(), expectedObject);
   });

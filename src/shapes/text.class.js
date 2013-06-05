@@ -463,9 +463,16 @@
      * @return {Number} Top offset
      */
     _getTopOffset: function() {
-      if (fabric.isLikelyNode && (this.originY === 'top' || this.originY === 'center')) {
+      if (fabric.isLikelyNode) {
+        if (this.originY === 'center' || this.originY === 'top') {
+          return -this.height / 2;
+        }
+        else if (this.originY === 'bottom') {
+          return -this.height;
+        }
         return 0;
       }
+      // in browser, text drawing always starts at vertical center
       return -this.height / 2;
     },
 
@@ -938,22 +945,13 @@
     }
   });
 
+  /* _FROM_SVG_START_ */
   /**
    * List of attribute names to account for when parsing SVG element (used by {@link fabric.Text.fromElement})
    * @static
    */
   fabric.Text.ATTRIBUTE_NAMES = fabric.SHARED_ATTRIBUTES.concat(
     'x y font-family font-style font-weight font-size text-decoration'.split(' '));
-
-  /**
-   * Returns fabric.Text instance from an object representation
-   * @static
-   * @param object {Object} object Object to create an instance from
-   * @return {fabric.Text} Instance of fabric.Text
-   */
-  fabric.Text.fromObject = function(object) {
-    return new fabric.Text(object.text, clone(object));
-  };
 
   /**
    * Returns fabric.Text instance from an SVG element (<b>not yet implemented</b>)
@@ -985,6 +983,17 @@
     });
 
     return text;
+  };
+  /* _FROM_SVG_END_ */
+
+  /**
+   * Returns fabric.Text instance from an object representation
+   * @static
+   * @param object {Object} object Object to create an instance from
+   * @return {fabric.Text} Instance of fabric.Text
+   */
+  fabric.Text.fromObject = function(object) {
+    return new fabric.Text(object.text, clone(object));
   };
 
   fabric.util.createAccessors(fabric.Text);

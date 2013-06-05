@@ -111,35 +111,35 @@
     angle:                    0,
 
     /**
-     * Size of object's corners (in pixels)
+     * Size of object's controlling corners (in pixels)
      * @type Number
      * @default
      */
     cornerSize:               12,
 
     /**
-     * When true, object's corners are rendered as transparent inside (i.e. stroke instead of fill)
+     * When true, object's controlling corners are rendered as transparent inside (i.e. stroke instead of fill)
      * @type Boolean
      * @default
      */
     transparentCorners:       true,
 
     /**
-     * Padding between object and its borders (in pixels)
+     * Padding between object and its controlling borders (in pixels)
      * @type Number
      * @default
      */
     padding:                  0,
 
     /**
-     * Border color of an object (when it's active)
+     * Color of controlling borders of an object (when it's active)
      * @type String
      * @default
      */
     borderColor:              'rgba(102,153,255,0.75)',
 
     /**
-     * Corner color of an object (when it's active)
+     * Color of controlling corners of an object (when it's active)
      * @type String
      * @default
      */
@@ -214,14 +214,14 @@
     shadow:                   null,
 
     /**
-     * Border opacity when object is active and moving
+     * Opacity of object's controlling borders when object is active and moving
      * @type Number
      * @default
      */
     borderOpacityWhenMoving:  0.4,
 
     /**
-     * Border scale factor
+     * Scale factor of object's controlling borders
      * @type Number
      * @default
      */
@@ -262,21 +262,21 @@
     hasControls:              true,
 
     /**
-     * When set to `false`, object's borders are not rendered
+     * When set to `false`, object's controlling borders are not rendered
      * @type Boolean
      * @default
      */
     hasBorders:               true,
 
     /**
-     * When set to `false`, object's rotating point will not be visible or selectable
+     * When set to `false`, object's controlling rotating point will not be visible or selectable
      * @type Boolean
      * @default
      */
     hasRotatingPoint:         true,
 
     /**
-     * Offset for object's rotating point (when enabled via `hasRotatingPoint`)
+     * Offset for object's controlling rotating point (when enabled via `hasRotatingPoint`)
      * @type Number
      * @default
      */
@@ -398,6 +398,18 @@
     },
 
     /**
+     * @private
+     */
+    _initClipping: function(options) {
+      if (!options.clipTo || typeof options.clipTo !== 'string') return;
+
+      var functionBody = fabric.util.getFunctionBody(options.clipTo);
+      if (typeof functionBody !== 'undefined') {
+        this.clipTo = new Function('ctx', functionBody);
+      }
+    },
+
+    /**
      * Sets object's properties from options
      * @param {Object} [options]
      */
@@ -408,6 +420,7 @@
       this._initGradient(options);
       this._initPattern(options);
       this._initShadow(options);
+      this._initClipping(options);
     },
 
     /**
@@ -465,7 +478,8 @@
         transparentCorners: this.transparentCorners,
         perPixelTargetFind: this.perPixelTargetFind,
         shadow:             (this.shadow && this.shadow.toObject) ? this.shadow.toObject() : this.shadow,
-        visible:            this.visible
+        visible:            this.visible,
+        clipTo:             this.clipTo && String(this.clipTo)
       };
 
       if (!this.includeDefaultValues) {
@@ -486,6 +500,7 @@
       return this.toObject(propertiesToInclude);
     },
 
+    /* _TO_SVG_START_ */
     /**
      * Returns styles-string for svg-export
      * @return {String}
@@ -537,6 +552,7 @@
 
       return [ translatePart, anglePart, scalePart, flipXPart, flipYPart ].join('');
     },
+    /* _TO_SVG_END_ */
 
     /**
      * @private
@@ -585,7 +601,7 @@
         }
       }
       else {
-        if (typeof value === 'function') {
+        if (typeof value === 'function' && key !== 'clipTo') {
           this._set(key, value(this.get(key)));
         }
         else {

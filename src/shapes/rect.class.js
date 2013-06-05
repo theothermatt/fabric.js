@@ -57,8 +57,8 @@
       this.callSuper('initialize', options);
       this._initRxRy();
 
-      this.x = 0;
-      this.y = 0;
+      this.x = options.x || 0;
+      this.y = options.y || 0;
     },
 
     /**
@@ -167,7 +167,9 @@
     toObject: function(propertiesToInclude) {
       return extend(this.callSuper('toObject', propertiesToInclude), {
         rx: this.get('rx') || 0,
-        ry: this.get('ry') || 0
+        ry: this.get('ry') || 0,
+        x: this.get('x'),
+        y: this.get('y')
       });
     },
 
@@ -209,6 +211,7 @@
     }
   });
 
+  /* _FROM_SVG_START_ */
   /**
    * List of attribute names to account for when parsing SVG element (used by `fabric.Rect.fromElement`)
    * @static
@@ -244,6 +247,7 @@
 
     return rect;
   };
+  /* _FROM_SVG_END_ */
 
   /**
    * Returns {@link fabric.Rect} instance from an object representation

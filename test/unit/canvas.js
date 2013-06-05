@@ -24,12 +24,12 @@
   var PATH_DATALESS_JSON = '{"objects":[{"type":"path","originX":"center","originY":"center","left":200,"top":200,"width":200,"height":200,"fill":"rgb(0,0,0)",'+
                            '"overlayFill":null,"stroke":null,"strokeWidth":1,"strokeDashArray":null,"strokeLineCap":"butt","strokeLineJoin":"miter","strokeMiterLimit":10,'+
                            '"scaleX":1,"scaleY":1,"angle":0,"flipX":false,"flipY":false,"opacity":1,"selectable":true,"hasControls":true,"hasBorders":true,"hasRotatingPoint":true,"transparentCorners":true,'+
-                           '"perPixelTargetFind":false,"shadow":null,"visible":true,"path":"http://example.com/"}],"background":""}';
+                           '"perPixelTargetFind":false,"shadow":null,"visible":true,"clipTo":null,"path":"http://example.com/"}],"background":""}';
 
   var RECT_JSON = '{"objects":[{"type":"rect","originX":"center","originY":"center","left":0,"top":0,"width":10,"height":10,"fill":"rgb(0,0,0)","overlayFill":null,'+
                   '"stroke":null,"strokeWidth":1,"strokeDashArray":null,"strokeLineCap":"butt","strokeLineJoin":"miter","strokeMiterLimit":10,"scaleX":1,"scaleY":1,"angle":0,"flipX":false,"flipY":false,"opacity":1,'+
                   '"selectable":true,"hasControls":true,"hasBorders":true,"hasRotatingPoint":true,"transparentCorners":true,"perPixelTargetFind":false,"shadow":null,'+
-                  '"visible":true,"rx":0,"ry":0}],"background":"#ff5555"}';
+                  '"visible":true,"clipTo":null,"rx":0,"ry":0,"x":0,"y":0}],"background":"#ff5555"}';
 
   var el = fabric.document.createElement('canvas');
   el.width = 600; el.height = 600;
@@ -242,6 +242,18 @@
     });
     canvas.add(path);
     equal(JSON.stringify(canvas.toDatalessJSON()), PATH_DATALESS_JSON);
+  });
+
+  test('toJSON with active group', function() {
+    var rect = new fabric.Rect({ width: 50, height: 50, left: 100, top: 100 });
+    var circle = new fabric.Circle({ radius: 50, left: 50, top: 50 });
+    canvas.add(rect, circle);
+    var json = JSON.stringify(canvas);
+
+    canvas.setActiveGroup(new fabric.Group([ rect, circle ])).renderAll();
+    var jsonWithActiveGroup = JSON.stringify(canvas);
+
+    equal(json, jsonWithActiveGroup);
   });
 
   test('toObject', function() {
@@ -622,6 +634,18 @@
 
     canvas.add(makeRect());
     equal(canvas.toString(), '#<fabric.Canvas (1): { objects: 1 }>');
+  });
+
+  test('toSVG with active group', function() {
+    var rect = new fabric.Rect({ width: 50, height: 50, left: 100, top: 100 });
+    var circle = new fabric.Circle({ radius: 50, left: 50, top: 50 });
+    canvas.add(rect, circle);
+    var svg = canvas.toSVG();
+
+    canvas.setActiveGroup(new fabric.Group([ rect, circle ])).renderAll();
+    var svgWithActiveGroup = canvas.toSVG();
+
+    equal(svg, svgWithActiveGroup);
   });
 
   // test('dispose', function() {
